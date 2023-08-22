@@ -104,16 +104,9 @@ func (pc *PersonController) CreatePerson(w http.ResponseWriter, r *http.Request)
 
 	pc.queue.Enqueue(person)
 
-	json, err := person.ToJSON()
-	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
+	w.Header().Set("Location", fmt.Sprintf("/pessoas/%s", person.ID))
 	w.WriteHeader(http.StatusCreated)
-	w.Write(json)
-	return
+	w.Write([]byte{})
 }
 
 func (pc *PersonController) GetPerson(w http.ResponseWriter, r *http.Request) {
