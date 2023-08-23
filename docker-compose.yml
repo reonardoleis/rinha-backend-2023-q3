@@ -22,8 +22,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.40'
-          memory: '0.55GB'
+          cpus: '0.37'
+          memory: '0.4GB'
 
   api2:
     environment:
@@ -47,8 +47,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.40'
-          memory: '0.55GB'
+          cpus: '0.38'
+          memory: '0.4GB'
 
   nginx:
     image: nginx:latest
@@ -62,16 +62,16 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.25'
-          memory: '0.5GB'
+          cpus: '0.40'
+          memory: '0.95GB'
 
   redis:
     image: redis
     deploy:
       resources:
         limits:
-          cpus: '0.25'
-          memory: '0.5GB'
+          cpus: '0.15'
+          memory: '0.35GB'
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
