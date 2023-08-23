@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofrs/uuid"
+	"github.com/reonardoleis/rinha-backend-2023/cache"
 	"github.com/reonardoleis/rinha-backend-2023/db"
 	"github.com/reonardoleis/rinha-backend-2023/models"
 	"github.com/reonardoleis/rinha-backend-2023/queue"
@@ -16,6 +17,7 @@ import (
 )
 
 type PersonController struct {
+	cache            *cache.Cache
 	personRepository *repositories.PersonRepository
 	queue            *queue.Queue
 }
@@ -37,7 +39,13 @@ func PersonControllerInstance() (*PersonController, error) {
 		return nil, err
 	}
 
+	cache, err := cache.Instance()
+	if err != nil {
+		return nil, err
+	}
+
 	singleton = &PersonController{
+		cache,
 		personRepository,
 		queue,
 	}
@@ -91,16 +99,21 @@ func (pc *PersonController) CreatePerson(w http.ResponseWriter, r *http.Request)
 	if personExists {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
-	}
+	} else {
+		uuid, err := uuid.NewV4()
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 
-	uuid, err := uuid.NewV4()
-	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+		person.ID = db.CustomUUID(uuid.String())
 
-	person.ID = db.CustomUUID(uuid.String())
+		err = pc.cache.SetPerson(string(person.ID), person)
+		if err != nil {
+			log.Println(err)
+		}
+	}
 
 	pc.queue.Enqueue(person)
 

@@ -63,7 +63,7 @@ func (p PersonRepository) CreatePeople(people []*models.Person) error {
 }
 
 func (p PersonRepository) FindPerson(id string) (*models.Person, error) {
-	person, isCached, err := p.Cache.GetPerson(id)
+	person, isCached, err := p.Cache.GetPersonByID(id)
 	if err != nil {
 		log.Println(err)
 	} else {
@@ -146,10 +146,19 @@ func (p PersonRepository) CountPeople() (uint, error) {
 }
 
 func (p PersonRepository) PersonExists(nickname string) (bool, error) {
+	_, isCached, err := p.Cache.GetPersonByNickname(nickname)
+	if err != nil {
+		return false, err
+	}
+
+	if isCached {
+		return true, nil
+	}
+
 	query := `SELECT EXISTS(SELECT 1 FROM person WHERE nickname = $1)`
 
 	var exists bool
-	err := p.DB.Conn.QueryRow(query, nickname).Scan(&exists)
+	err = p.DB.Conn.QueryRow(query, nickname).Scan(&exists)
 	if err != nil {
 		log.Println(err)
 		return false, err
