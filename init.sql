@@ -10,4 +10,4 @@ CREATE TABLE IF NOT EXISTS person(
     stack TEXT NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS person_nickname_idx ON person(nickname);
+CREATE INDEX IF NOT EXISTS person_nickname_idx ON person(nickname); 
