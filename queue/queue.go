@@ -41,6 +41,10 @@ func Instance() (*Queue, error) {
 }
 
 func (q *Queue) Enqueue(person *models.Person) {
+	for q.PendingSize() >= utils.GetIntEnv("MAX_QUEUE_SIZE", 5000) {
+
+	}
+
 	q.lock.Lock()
 	defer q.lock.Unlock()
 
@@ -48,9 +52,6 @@ func (q *Queue) Enqueue(person *models.Person) {
 }
 
 func (q *Queue) PendingSize() int {
-	q.lock.Lock()
-	defer q.lock.Unlock()
-
 	return len(q.pendingInsertion)
 }
 
@@ -94,7 +95,7 @@ func (q *Queue) Init() {
 	go func() {
 		for {
 			q.shouldInsertByInterval()
-			time.Sleep(1 * time.Second)
+			time.Sleep(100 * time.Millisecond)
 			size := q.PendingSize()
 			batchSize := utils.GetIntEnv("INSERT_BATCH_SIZE", 10)
 			if size >= batchSize || (size != 0 && q.shouldInsertByInterval()) {
