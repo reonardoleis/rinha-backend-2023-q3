@@ -2,22 +2,25 @@ package queue
 
 import (
 	"log"
-	"sync"
+	"math"
 	"time"
 
-	"github.com/reonardoleis/rinha-backend-2023/models"
+	"github.com/reonardoleis/rinha-backend-2023/cache"
 	"github.com/reonardoleis/rinha-backend-2023/repositories"
 	"github.com/reonardoleis/rinha-backend-2023/utils"
 )
 
 type Queue struct {
 	personRepository *repositories.PersonRepository
-	pendingInsertion []*models.Person
-	lock             sync.Mutex
+	cache            *cache.Cache
 	lastRun          int64
 }
 
 var singleton *Queue
+
+var exponentialWaitSeconds = 2
+var exponentialWaitExp = 2
+var exponentialWaitMax = 16
 
 func Instance() (*Queue, error) {
 	if singleton != nil {
@@ -30,43 +33,19 @@ func Instance() (*Queue, error) {
 		return nil, err
 	}
 
+	cache, err := cache.Instance()
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
 	singleton = &Queue{
 		personRepository,
-		make([]*models.Person, 0),
-		sync.Mutex{},
+		cache,
 		time.Now().UnixNano(),
 	}
 
 	return singleton, nil
-}
-
-func (q *Queue) Enqueue(person *models.Person) {
-	for q.PendingSize() >= utils.GetIntEnv("MAX_QUEUE_SIZE", 5000) {
-
-	}
-
-	q.lock.Lock()
-	defer q.lock.Unlock()
-
-	q.pendingInsertion = append(q.pendingInsertion, person)
-}
-
-func (q *Queue) PendingSize() int {
-	return len(q.pendingInsertion)
-}
-
-func (q *Queue) PopFirstN(n int) []*models.Person {
-	q.lock.Lock()
-	defer q.lock.Unlock()
-
-	if n > len(q.pendingInsertion) {
-		n = len(q.pendingInsertion)
-	}
-
-	pending := q.pendingInsertion[:n]
-	q.pendingInsertion = q.pendingInsertion[n:]
-
-	return pending
 }
 
 func (q *Queue) shouldInsertByInterval() bool {
@@ -78,37 +57,36 @@ func (q *Queue) shouldInsertByInterval() bool {
 	return shouldInsert
 }
 
-func (q *Queue) ContainsNickname(nickname string) bool {
-	q.lock.Lock()
-	defer q.lock.Unlock()
+func (q *Queue) Init() {
+	for {
+		time.Sleep(1000 * time.Millisecond)
+		size := q.cache.QueueSize()
+		batchSize := utils.GetIntEnv("INSERT_BATCH_SIZE", 10)
 
-	for _, person := range q.pendingInsertion {
-		if person.Nickname == nickname {
-			return true
+		if size >= batchSize || (size != 0 && q.shouldInsertByInterval()) {
+			people, err := q.cache.PopFirstN(batchSize)
+			if err != nil {
+				val := math.Pow(float64(exponentialWaitSeconds), float64(exponentialWaitExp))
+				time.Sleep(time.Duration(int(val) * int(time.Second)))
+
+				if val <= float64(exponentialWaitMax) {
+					exponentialWaitExp++
+				}
+
+				log.Println(err)
+				continue
+			}
+
+			err = q.personRepository.CreatePeople(people)
+			if err != nil {
+				q.cache.Enqueue(people)
+				log.Println(err)
+			} else {
+				q.lastRun = time.Now().UnixNano()
+				exponentialWaitExp = 2
+			}
+
 		}
 	}
 
-	return false
-}
-
-func (q *Queue) Init() {
-	go func() {
-		for {
-			q.shouldInsertByInterval()
-			time.Sleep(100 * time.Millisecond)
-			size := q.PendingSize()
-			batchSize := utils.GetIntEnv("INSERT_BATCH_SIZE", 10)
-			if size >= batchSize || (size != 0 && q.shouldInsertByInterval()) {
-				pending := q.PopFirstN(batchSize)
-				err := q.personRepository.CreatePeople(pending)
-				if err != nil {
-					q.pendingInsertion = append(pending, q.pendingInsertion...)
-					log.Println(err)
-				} else {
-					q.lastRun = time.Now().UnixNano()
-				}
-
-			}
-		}
-	}()
 }

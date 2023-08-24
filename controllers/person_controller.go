@@ -12,14 +12,13 @@ import (
 	"github.com/reonardoleis/rinha-backend-2023/cache"
 	"github.com/reonardoleis/rinha-backend-2023/db"
 	"github.com/reonardoleis/rinha-backend-2023/models"
-	"github.com/reonardoleis/rinha-backend-2023/queue"
 	"github.com/reonardoleis/rinha-backend-2023/repositories"
 )
 
 type PersonController struct {
 	cache            *cache.Cache
 	personRepository *repositories.PersonRepository
-	queue            *queue.Queue
+	// queue            *queue.Queue
 }
 
 var singleton *PersonController
@@ -34,11 +33,6 @@ func PersonControllerInstance() (*PersonController, error) {
 		return nil, err
 	}
 
-	queue, err := queue.Instance()
-	if err != nil {
-		return nil, err
-	}
-
 	cache, err := cache.Instance()
 	if err != nil {
 		return nil, err
@@ -47,7 +41,6 @@ func PersonControllerInstance() (*PersonController, error) {
 	singleton = &PersonController{
 		cache,
 		personRepository,
-		queue,
 	}
 
 	return singleton, nil
@@ -83,12 +76,6 @@ func (pc *PersonController) CreatePerson(w http.ResponseWriter, r *http.Request)
 		person.Stack = make([]string, 0)
 	}
 
-	isEnqueued := pc.queue.ContainsNickname(person.Nickname)
-	if isEnqueued {
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		return
-	}
-
 	personExists, err := pc.personRepository.PersonExists(person.Nickname)
 	if err != nil {
 		log.Println(err)
@@ -115,7 +102,15 @@ func (pc *PersonController) CreatePerson(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	pc.queue.Enqueue(person)
+	alreadyEnqueued, err := pc.cache.Enqueue([]*models.Person{person})
+	if err != nil {
+		log.Println(err)
+	}
+
+	if alreadyEnqueued {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		return
+	}
 
 	w.Header().Set("Location", fmt.Sprintf("/pessoas/%s", person.ID))
 	w.WriteHeader(http.StatusCreated)

@@ -2,6 +2,7 @@ version: '3.5'
 services:
   api1:
     environment:
+      IS_QUEUE: false
       DB_HOST: db
       DB_PORT: 5432
       DB_USER: postgres
@@ -22,11 +23,12 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.37'
-          memory: '0.4GB'
+          cpus: '0.20'
+          memory: '0.2GB'
 
   api2:
     environment:
+      IS_QUEUE: false
       DB_HOST: db
       DB_PORT: 5432
       DB_USER: postgres
@@ -47,7 +49,30 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.38'
+          cpus: '0.20'
+          memory: '0.2GB'
+  
+  consumer:
+    environment:
+      IS_QUEUE: true
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: rinha
+      CACHE_DURATION_SECONDS: 45
+      INSERT_BATCH_SIZE: 1000
+      INSERT_BATCH_INTERVAL: 3
+    image: reonardoleis/rinha-backend-2023-q3
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.30'
           memory: '0.4GB'
 
   nginx:
@@ -62,16 +87,16 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.40'
-          memory: '0.95GB'
+          cpus: '0.30'
+          memory: '0.5GB'
 
   redis:
     image: redis
     deploy:
       resources:
         limits:
-          cpus: '0.15'
-          memory: '0.35GB'
+          cpus: '0.30'
+          memory: '0.65GB'
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -91,6 +116,6 @@ services:
       resources:
         limits:
           cpus: '0.20'
-          memory: '0.9GB'
+          memory: '1.05GB'
    volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
