@@ -2,7 +2,7 @@ version: '3.5'
 services:
   api1:
     environment:
-      IS_QUEUE: false
+      IS_QUEUE: "false"
       DB_HOST: db
       DB_PORT: 5432
       DB_USER: postgres
@@ -28,7 +28,7 @@ services:
 
   api2:
     environment:
-      IS_QUEUE: false
+      IS_QUEUE: "false"
       DB_HOST: db
       DB_PORT: 5432
       DB_USER: postgres
@@ -54,7 +54,7 @@ services:
   
   consumer:
     environment:
-      IS_QUEUE: true
+      IS_QUEUE: "true"
       DB_HOST: db
       DB_PORT: 5432
       DB_USER: postgres
