@@ -127,6 +127,26 @@ func (c *Cache) GetPersonByNickname(nickname string) (*models.Person, bool, erro
 	return person, true, nil
 }
 
+func (c *Cache) PersonExists(nickname string) (bool, error) {
+	id, err := c.client.Get(context.Background(), nickname).Result()
+	if err != nil {
+		if err == redis.Nil {
+			return false, nil
+		}
+
+		log.Println(err)
+	}
+
+	_, err = c.client.Exists(context.Background(), id).Result()
+	if err != nil {
+		if err == redis.Nil {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
 func (c *Cache) SetTermSearch(term string, people []*models.Person) error {
 	json, err := json.Marshal(people)
 	if err != nil {

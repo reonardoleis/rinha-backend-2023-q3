@@ -1,17 +1,17 @@
 package db
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 	"log"
 	"os"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/lib/pq"
-	"github.com/reonardoleis/rinha-backend-2023/utils"
 )
 
 type Database struct {
-	Conn *sql.DB
+	Conn *pgxpool.Pool
 }
 
 var singleton *Database
@@ -25,26 +25,29 @@ func Connect() error {
 		password = os.Getenv("DB_PASSWORD")
 	)
 
-	postgresDB, err := sql.Open(
-		"postgres",
-		fmt.Sprintf(
-			"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-			host,
-			port,
-			user,
-			password,
-			name),
-	)
+	connString := fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		host,
+		port,
+		user,
+		password,
+		name)
 
-	postgresDB.SetMaxIdleConns(utils.GetIntEnv("MAX_IDLE_CONNS", 30))
-	postgresDB.SetMaxOpenConns(utils.GetIntEnv("MAX_OPEN_CONNS", 450))
-
+	config, err := pgxpool.ParseConfig(connString)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
 
-	singleton = &Database{Conn: postgresDB}
+	config.MaxConns = 400
+
+	pool, err := pgxpool.NewWithConfig(context.Background(), config)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	singleton = &Database{Conn: pool}
 
 	return nil
 }

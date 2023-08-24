@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"context"
 	"fmt"
 	"log"
 
@@ -61,7 +62,7 @@ func (p PersonRepository) CreatePeople(people []*models.Person) error {
 	}
 
 	query = query[:len(query)-1]
-	_, err := p.DB.Conn.Exec(query, args...)
+	_, err := p.DB.Conn.Exec(context.Background(), query, args...)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -78,11 +79,6 @@ func (p PersonRepository) FindPerson(id string) (*models.Person, error) {
 		log.Println(err)
 	} else {
 		if isCached {
-			err = p.Cache.SetPerson(id, person)
-			if err != nil {
-				log.Println(err)
-			}
-
 			return person, nil
 		}
 	}
@@ -94,6 +90,7 @@ func (p PersonRepository) FindPerson(id string) (*models.Person, error) {
 			  WHERE id = $1`
 
 	err = p.DB.Conn.QueryRow(
+		context.Background(),
 		query,
 		id,
 	).Scan(&person.Name, &person.Nickname, &person.BirthDate, &person.Stack)
@@ -113,11 +110,6 @@ func (p PersonRepository) SearchPeople(term string) ([]*models.Person, error) {
 		log.Println(err)
 	} else {
 		if isCached {
-			err = p.Cache.SetTermSearch(term, people)
-			if err != nil {
-				log.Println(err)
-			}
-
 			return people, nil
 		}
 	}
@@ -130,7 +122,7 @@ func (p PersonRepository) SearchPeople(term string) ([]*models.Person, error) {
 		term,
 	)
 
-	rows, err := p.DB.Conn.Query(query)
+	rows, err := p.DB.Conn.Query(context.Background(), query)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -155,7 +147,7 @@ func (p PersonRepository) CountPeople() (uint, error) {
 	query := `SELECT COUNT(id) FROM person`
 
 	var count uint
-	err := p.DB.Conn.QueryRow(query).Scan(&count)
+	err := p.DB.Conn.QueryRow(context.Background(), query).Scan(&count)
 	if err != nil {
 		log.Println(err)
 		return 0, err
@@ -165,26 +157,21 @@ func (p PersonRepository) CountPeople() (uint, error) {
 }
 
 func (p PersonRepository) PersonExists(nickname string) (bool, error) {
-	person, isCached, err := p.Cache.GetPersonByNickname(nickname)
+	exists, err := p.Cache.PersonExists(nickname)
 	if err != nil {
 		log.Println(err)
 	}
 
-	if isCached {
-		err = p.Cache.SetPerson(string(person.ID), person)
-		if err != nil {
-			log.Println(err)
-			return false, nil
-		}
+	if exists {
 		return true, nil
 	}
 
 	query := `SELECT id FROM person WHERE nickname = $1`
 
 	var id string
-	err = p.DB.Conn.QueryRow(query, nickname).Scan(&id)
+	err = p.DB.Conn.QueryRow(context.Background(), query, nickname).Scan(&id)
 	if err != nil {
-		if err.Error() == "sql: no rows in result set" {
+		if err.Error() == "no rows in result set" {
 			return false, nil
 		}
 

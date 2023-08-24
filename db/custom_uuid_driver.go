@@ -11,7 +11,7 @@ func (c CustomUUID) Value() (driver.Value, error) {
 }
 
 func (c *CustomUUID) Scan(src interface{}) error {
-	uuid_uint8 := src.([]uint8)
-	*c = CustomUUID(uuid_uint8)
+	uuid_str := src.(string)
+	*c = CustomUUID(uuid_str)
 	return nil
 }
