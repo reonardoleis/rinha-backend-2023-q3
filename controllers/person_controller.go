@@ -9,16 +9,15 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofrs/uuid"
-	"github.com/reonardoleis/rinha-backend-2023/cache"
 	"github.com/reonardoleis/rinha-backend-2023/db"
 	"github.com/reonardoleis/rinha-backend-2023/models"
+	"github.com/reonardoleis/rinha-backend-2023/queue"
 	"github.com/reonardoleis/rinha-backend-2023/repositories"
 )
 
 type PersonController struct {
-	cache            *cache.Cache
 	personRepository *repositories.PersonRepository
-	// queue            *queue.Queue
+	queue            *queue.Queue
 }
 
 var singleton *PersonController
@@ -33,14 +32,14 @@ func PersonControllerInstance() (*PersonController, error) {
 		return nil, err
 	}
 
-	cache, err := cache.Instance()
+	queue, err := queue.Instance()
 	if err != nil {
 		return nil, err
 	}
 
 	singleton = &PersonController{
-		cache,
 		personRepository,
+		queue,
 	}
 
 	return singleton, nil
@@ -96,13 +95,13 @@ func (pc *PersonController) CreatePerson(w http.ResponseWriter, r *http.Request)
 
 		person.ID = db.CustomUUID(uuid.String())
 
-		err = pc.cache.SetPerson(string(person.ID), person)
+		err = pc.personRepository.InsertPerson(person)
 		if err != nil {
 			log.Println(err)
 		}
 	}
 
-	alreadyEnqueued, err := pc.cache.Enqueue([]*models.Person{person})
+	alreadyEnqueued, err := pc.queue.Enqueue([]*models.Person{person})
 	if err != nil {
 		log.Println(err)
 	}

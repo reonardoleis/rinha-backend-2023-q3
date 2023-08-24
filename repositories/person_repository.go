@@ -41,6 +41,16 @@ func PersonRepositoryInstance() (*PersonRepository, error) {
 	return singleton, nil
 }
 
+func (p PersonRepository) InsertPerson(person *models.Person) error {
+	err := p.Cache.SetPerson(string(person.ID), person)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	return nil
+}
+
 func (p PersonRepository) CreatePeople(people []*models.Person) error {
 	query := "INSERT INTO person (id, nickname, name, birth_date, stack) VALUES "
 	args := make([]interface{}, 0)
@@ -68,6 +78,11 @@ func (p PersonRepository) FindPerson(id string) (*models.Person, error) {
 		log.Println(err)
 	} else {
 		if isCached {
+			err = p.Cache.SetPerson(id, person)
+			if err != nil {
+				log.Println(err)
+			}
+
 			return person, nil
 		}
 	}
@@ -98,6 +113,11 @@ func (p PersonRepository) SearchPeople(term string) ([]*models.Person, error) {
 		log.Println(err)
 	} else {
 		if isCached {
+			err = p.Cache.SetTermSearch(term, people)
+			if err != nil {
+				log.Println(err)
+			}
+
 			return people, nil
 		}
 	}
@@ -146,14 +166,31 @@ func (p PersonRepository) CountPeople() (uint, error) {
 }
 
 func (p PersonRepository) PersonExists(nickname string) (bool, error) {
-	_, isCached, err := p.Cache.GetPersonByNickname(nickname)
+	person, isCached, err := p.Cache.GetPersonByNickname(nickname)
 	if err != nil {
 		return false, err
 	}
 
 	if isCached {
+		err = p.Cache.SetPerson(string(person.ID), person)
+		if err != nil {
+			log.Println(err)
+		}
 		return true, nil
 	}
 
-	return false, nil
+	query := `SELECT id FROM person WHERE nickname = $1`
+
+	var id string
+	err = p.DB.Conn.QueryRow(query, nickname).Scan(&id)
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			return false, nil
+		}
+
+		log.Println(err)
+		return false, err
+	}
+
+	return true, nil
 }

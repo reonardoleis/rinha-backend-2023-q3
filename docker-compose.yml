@@ -8,9 +8,7 @@ services:
       DB_USER: postgres
       DB_PASSWORD: postgres
       DB_NAME: rinha
-      CACHE_DURATION_SECONDS: 45
-      INSERT_BATCH_SIZE: 1000
-      INSERT_BATCH_INTERVAL: 3
+      CACHE_DURATION_SECONDS: 90
     image: reonardoleis/rinha-backend-2023-q3
     hostname: api1
     depends_on:
@@ -34,9 +32,7 @@ services:
       DB_USER: postgres
       DB_PASSWORD: postgres
       DB_NAME: rinha
-      CACHE_DURATION_SECONDS: 45
-      INSERT_BATCH_SIZE: 1000
-      INSERT_BATCH_INTERVAL: 3
+      CACHE_DURATION_SECONDS: 90
     image: reonardoleis/rinha-backend-2023-q3
     hostname: api2
     depends_on:
@@ -109,6 +105,7 @@ services:
       timeout: 5s
       retries: 5
    image: postgres
+   command: postgres -c max_connections=300
    environment:
      POSTGRES_PASSWORD: postgres
      POSTGRES_USER: postgres

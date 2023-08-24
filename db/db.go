@@ -7,6 +7,7 @@ import (
 	"os"
 
 	_ "github.com/lib/pq"
+	"github.com/reonardoleis/rinha-backend-2023/utils"
 )
 
 type Database struct {
@@ -34,6 +35,9 @@ func Connect() error {
 			password,
 			name),
 	)
+
+	postgresDB.SetMaxIdleConns(utils.GetIntEnv("MAX_IDLE_CONNS", 10))
+	postgresDB.SetMaxOpenConns(utils.GetIntEnv("MAX_OPEN_CONNS", 100))
 
 	if err != nil {
 		log.Println(err)
