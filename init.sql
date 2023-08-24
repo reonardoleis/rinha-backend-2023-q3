@@ -13,6 +13,6 @@ CREATE TABLE IF NOT EXISTS person(
 
 CREATE INDEX idx_person ON person USING GIN(idx);
 
-ALTER SYSTEM SET shared_buffers TO '368MB';
-ALTER SYSTEM SET max_connections TO '10000';
+ALTER SYSTEM SET shared_buffers TO '468MB';
+ALTER SYSTEM SET max_connections TO '10500';
 
