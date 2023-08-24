@@ -22,7 +22,7 @@ services:
       resources:
         limits:
           cpus: '0.30'
-          memory: '0.40'
+          memory: '0.50'
 
   api2:
     environment:
@@ -46,7 +46,7 @@ services:
       resources:
         limits:
           cpus: '0.30'
-          memory: '0.40'
+          memory: '0.50'
   
   consumer:
     environment:
@@ -82,7 +82,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.15'
+          cpus: '0.25'
           memory: '0.2GB'
 
   redis:
@@ -90,8 +90,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.30'
-          memory: '0.70GB'
+          cpus: '0.20'
+          memory: '0.50GB'
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
