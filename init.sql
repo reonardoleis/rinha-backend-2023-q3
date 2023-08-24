@@ -7,9 +7,8 @@ CREATE TABLE IF NOT EXISTS person(
     name VARCHAR(100) NOT NULL,
     nickname VARCHAR(32) NOT NULL UNIQUE,
     birth_date DATE NOT NULL,
-    stack TEXT NOT NULL
+    stack TEXT NOT NULL,
+    idx tsvector GENERATED ALWAYS AS (to_tsvector('portuguese', name || ' ' || nickname || ' ' || stack)) STORED
 );
 
-CREATE INDEX IF NOT EXISTS person_nickname_idx ON person(nickname); 
-CREATE INDEX IF NOT EXISTS person_name_idx ON person(name);
-CREATE INDEX IF NOT EXISTS person_stack_idx ON person(stack);
+CREATE INDEX idx_person ON person USING GIN(idx);

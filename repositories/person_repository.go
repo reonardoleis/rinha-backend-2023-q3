@@ -124,11 +124,10 @@ func (p PersonRepository) SearchPeople(term string) ([]*models.Person, error) {
 
 	query := fmt.Sprintf(
 		`SELECT id, nickname, name, birth_date, stack FROM person WHERE
-	nickname LIKE '%%%s%%' OR
-	name LIKE '%%%s%%' OR
-	stack LIKE '%%%s%%'
+	idx @@ to_tsquery('simple', '%s:*')
+	ORDER BY id DESC
 	LIMIT 50`,
-		term, term, term,
+		term,
 	)
 
 	rows, err := p.DB.Conn.Query(query)
