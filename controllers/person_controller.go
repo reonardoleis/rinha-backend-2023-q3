@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
-	"sync"
 	"unicode/utf8"
 
 	"github.com/gofrs/uuid"
@@ -59,19 +58,6 @@ func (pc *PersonController) CreatePerson(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	stackBarrier := sync.WaitGroup{}
-	stackBarrier.Add(1)
-	go func() {
-		defer stackBarrier.Done()
-		for _, stack := range person.Stack {
-			stackLen := utf8.RuneCountInString(stack)
-			if stackLen == 0 || stackLen > 32 {
-				w.WriteHeader(http.StatusUnprocessableEntity)
-				return
-			}
-		}
-	}()
-
 	if person.Nickname == "" || person.BirthDate == "" || person.Name == "" {
 		log.Println("error validating person", err)
 		w.WriteHeader(http.StatusUnprocessableEntity)
@@ -91,6 +77,14 @@ func (pc *PersonController) CreatePerson(w http.ResponseWriter, r *http.Request)
 		person.Stack = make([]string, 0)
 	}
 
+	for _, stack := range person.Stack {
+		stackLen := utf8.RuneCountInString(stack)
+		if stackLen == 0 || stackLen > 32 {
+			w.WriteHeader(http.StatusUnprocessableEntity)
+			return
+		}
+	}
+
 	personExists, err := pc.personRepository.PersonExists(person.Nickname)
 	if err != nil {
 		log.Println(err)
@@ -102,7 +96,6 @@ func (pc *PersonController) CreatePerson(w http.ResponseWriter, r *http.Request)
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	} else {
-		stackBarrier.Wait()
 
 		uuid, err := uuid.NewV4()
 		if err != nil {
