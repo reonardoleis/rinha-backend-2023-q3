@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
 	"strings"
+	"unicode/utf8"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/gofrs/uuid"
 	"github.com/reonardoleis/rinha-backend-2023/db"
 	"github.com/reonardoleis/rinha-backend-2023/models"
@@ -57,18 +58,27 @@ func (pc *PersonController) CreatePerson(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	for _, stack := range person.Stack {
-		if stack == "" || len(stack) > 32 {
-			w.WriteHeader(http.StatusUnprocessableEntity)
-			return
-		}
-	}
-
-	err = validator.New().Struct(person)
-	if err != nil {
+	if person.Nickname == "" || person.BirthDate == "" || person.Name == "" {
 		log.Println("error validating person", err)
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
+	}
+
+	birthdateRegex := regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
+
+	if utf8.RuneCountInString(person.Nickname) > 32 ||
+		utf8.RuneCountInString(person.Name) > 100 ||
+		!birthdateRegex.MatchString(string(person.BirthDate)) {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		return
+	}
+
+	for _, stack := range person.Stack {
+		stackLen := utf8.RuneCountInString(stack)
+		if stackLen == 0 || stackLen > 32 {
+			w.WriteHeader(http.StatusUnprocessableEntity)
+			return
+		}
 	}
 
 	if person.Stack == nil {
