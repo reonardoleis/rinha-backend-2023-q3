@@ -105,7 +105,7 @@ services:
       timeout: 5s
       retries: 5
    image: postgres
-   command: postgres -c max_connections=300
+   command: postgres -c max_connections=300 && echo "shared_buffers = 128mb" >> /etc/postgresql/postgresql.conf
    environment:
      POSTGRES_PASSWORD: postgres
      POSTGRES_USER: postgres
