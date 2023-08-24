@@ -56,7 +56,6 @@ services:
       DB_USER: postgres
       DB_PASSWORD: postgres
       DB_NAME: rinha
-      CACHE_DURATION_SECONDS: 45
       INSERT_BATCH_SIZE: 1000
       INSERT_BATCH_INTERVAL: 3
     image: reonardoleis/rinha-backend-2023-q3
