@@ -60,28 +60,29 @@ func (q *Queue) shouldInsertByInterval() bool {
 	return shouldInsert
 }
 
-func (q *Queue) Enqueue(person []*models.Person) (bool, error) {
+func (q *Queue) Enqueue(person []*models.Person) error {
 	var jsons []byte
 	for _, p := range person {
 		json, err := p.ToJSON()
 		if err != nil {
 			log.Println(err)
-			return false, err
+			return err
 		}
 
 		jsons = append(jsons, json...)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+		defer cancel()
 
-	err := q.cache.Client().LPush(ctx, "queue", jsons).Err()
-	if err != nil {
-		log.Println(err)
-		return false, err
-	}
+		err := q.cache.Client().LPush(ctx, "queue", jsons).Err()
+		if err != nil {
+			log.Println(err)
+		}
+	}()
 
-	return false, nil
+	return nil
 }
 
 func (q *Queue) PopFirstN(n int) ([]*models.Person, error) {

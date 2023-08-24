@@ -39,8 +39,8 @@ func Connect() error {
 		return err
 	}
 
-	config.MinConns = 200
-	config.MaxConns = 4000
+	config.MinConns = 4000
+	config.MaxConns = 4500
 
 	pool, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {

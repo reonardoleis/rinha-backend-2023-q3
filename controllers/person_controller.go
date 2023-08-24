@@ -112,14 +112,9 @@ func (pc *PersonController) CreatePerson(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	alreadyEnqueued, err := pc.queue.Enqueue([]*models.Person{person})
+	err = pc.queue.Enqueue([]*models.Person{person})
 	if err != nil {
 		log.Println(err)
-	}
-
-	if alreadyEnqueued {
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		return
 	}
 
 	w.Header().Set("Location", fmt.Sprintf("/pessoas/%s", person.ID))
