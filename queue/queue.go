@@ -72,15 +72,13 @@ func (q *Queue) Enqueue(person []*models.Person) error {
 		jsons = append(jsons, json...)
 	}
 
-	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-		defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
 
-		err := q.cache.Client().LPush(ctx, "queue", jsons).Err()
-		if err != nil {
-			log.Println(err)
-		}
-	}()
+	err := q.cache.Client().LPush(ctx, "queue", jsons).Err()
+	if err != nil {
+		log.Println(err)
+	}
 
 	return nil
 }
