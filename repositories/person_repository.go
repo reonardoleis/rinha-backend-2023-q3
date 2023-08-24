@@ -167,13 +167,14 @@ func (p PersonRepository) CountPeople() (uint, error) {
 func (p PersonRepository) PersonExists(nickname string) (bool, error) {
 	person, isCached, err := p.Cache.GetPersonByNickname(nickname)
 	if err != nil {
-		return false, err
+		log.Println(err)
 	}
 
 	if isCached {
 		err = p.Cache.SetPerson(string(person.ID), person)
 		if err != nil {
 			log.Println(err)
+			return false, nil
 		}
 		return true, nil
 	}

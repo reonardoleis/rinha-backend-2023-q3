@@ -22,7 +22,7 @@ services:
       resources:
         limits:
           cpus: '0.30'
-          memory: '0.55'
+          memory: '0.40'
 
   api2:
     environment:
@@ -46,7 +46,7 @@ services:
       resources:
         limits:
           cpus: '0.30'
-          memory: '0.55'
+          memory: '0.40'
   
   consumer:
     environment:
@@ -83,7 +83,7 @@ services:
       resources:
         limits:
           cpus: '0.20'
-          memory: '0.5GB'
+          memory: '0.4GB'
 
   redis:
     image: redis
@@ -111,7 +111,7 @@ services:
    deploy:
       resources:
         limits:
-          cpus: '0.40'
-          memory: '0.8GB'
+          cpus: '0.60'
+          memory: '1.0GB'
    volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
