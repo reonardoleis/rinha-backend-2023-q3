@@ -89,7 +89,13 @@ func (p PersonRepository) FindPerson(id string) (*models.Person, error) {
 	query := `SELECT name, nickname, birth_date, stack FROM person
 			  WHERE id = $1`
 
-	err = p.DB.Conn.QueryRow(
+	conn, err := p.DB.Conn.Acquire(context.Background())
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	err = conn.QueryRow(
 		context.Background(),
 		query,
 		id,
@@ -122,7 +128,13 @@ func (p PersonRepository) SearchPeople(term string) ([]*models.Person, error) {
 		term,
 	)
 
-	rows, err := p.DB.Conn.Query(context.Background(), query)
+	conn, err := p.DB.Conn.Acquire(context.Background())
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	rows, err := conn.Query(context.Background(), query)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -166,10 +178,17 @@ func (p PersonRepository) PersonExists(nickname string) (bool, error) {
 		return true, nil
 	}
 
-	query := `SELECT id FROM person WHERE nickname = $1`
+	query := `SELECT id FROM person WHERE nickname = $1 LIMIT 1`
 
 	var id string
-	err = p.DB.Conn.QueryRow(context.Background(), query, nickname).Scan(&id)
+
+	conn, err := p.DB.Conn.Acquire(context.Background())
+	if err != nil {
+		log.Println(err)
+		return false, err
+	}
+
+	err = conn.QueryRow(context.Background(), query, nickname).Scan(&id)
 	if err != nil {
 		if err.Error() == "no rows in result set" {
 			return false, nil
