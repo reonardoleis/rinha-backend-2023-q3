@@ -36,8 +36,8 @@ func Connect() error {
 			name),
 	)
 
-	postgresDB.SetMaxIdleConns(utils.GetIntEnv("MAX_IDLE_CONNS", 10))
-	postgresDB.SetMaxOpenConns(utils.GetIntEnv("MAX_OPEN_CONNS", 100))
+	postgresDB.SetMaxIdleConns(utils.GetIntEnv("MAX_IDLE_CONNS", 30))
+	postgresDB.SetMaxOpenConns(utils.GetIntEnv("MAX_OPEN_CONNS", 450))
 
 	if err != nil {
 		log.Println(err)
