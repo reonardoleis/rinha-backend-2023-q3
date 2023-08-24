@@ -12,4 +12,4 @@ CREATE TABLE IF NOT EXISTS person(
 
 CREATE INDEX IF NOT EXISTS person_nickname_idx ON person(nickname); 
 CREATE INDEX IF NOT EXISTS person_name_idx ON person(name);
-CREATE INDEX IF NOT EXISTS person_stack_idx ON person USING GIN (stack gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS person_stack_idx ON person(stack);
