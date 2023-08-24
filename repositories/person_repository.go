@@ -155,14 +155,5 @@ func (p PersonRepository) PersonExists(nickname string) (bool, error) {
 		return true, nil
 	}
 
-	query := `SELECT EXISTS(SELECT 1 FROM person WHERE nickname = $1)`
-
-	var exists bool
-	err = p.DB.Conn.QueryRow(query, nickname).Scan(&exists)
-	if err != nil {
-		log.Println(err)
-		return false, err
-	}
-
-	return exists, nil
+	return false, nil
 }
