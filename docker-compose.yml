@@ -67,7 +67,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.10'
+          cpus: '0.05'
           memory: '0.2GB'
 
   nginx:
@@ -83,7 +83,7 @@ services:
       resources:
         limits:
           cpus: '0.15'
-          memory: '0.3GB'
+          memory: '0.2GB'
 
   redis:
     image: redis
@@ -110,7 +110,7 @@ services:
    deploy:
       resources:
         limits:
-          cpus: '0.35'
-          memory: '1.0GB'
+          cpus: '0.40'
+          memory: '1.1GB'
    volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
