@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
-	"sync"
 
 	"github.com/gofrs/uuid"
 	"github.com/reonardoleis/rinha-backend-2023/db"
@@ -64,30 +63,26 @@ func (pc *PersonController) CreatePerson(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	barrier := sync.WaitGroup{}
-	barrier.Add(1)
 	var generatedUUID uuid.UUID
 	var personExists bool
-	go func() {
-		defer barrier.Done()
-		personExists, err = pc.personRepository.PersonExists(person.Nickname)
-		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		if personExists {
-			w.WriteHeader(http.StatusUnprocessableEntity)
-			return
-		}
 
-		generatedUUID, err = uuid.NewV4()
-		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	}()
+	personExists, err = pc.personRepository.PersonExists(person.Nickname)
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if personExists {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		return
+	}
+
+	generatedUUID, err = uuid.NewV4()
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 	birthdateRegex := regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
 
@@ -95,11 +90,6 @@ func (pc *PersonController) CreatePerson(w http.ResponseWriter, r *http.Request)
 		len(person.Name) > 100 ||
 		!birthdateRegex.MatchString(string(person.BirthDate)) {
 		w.WriteHeader(http.StatusUnprocessableEntity)
-		return
-	}
-
-	barrier.Wait()
-	if personExists {
 		return
 	}
 
@@ -117,15 +107,7 @@ func (pc *PersonController) CreatePerson(w http.ResponseWriter, r *http.Request)
 
 	person.ID = db.CustomUUID(generatedUUID.String())
 
-	err = pc.personRepository.InsertPerson(person)
-	if err != nil {
-		log.Println(err)
-	}
-
-	err = pc.queue.Enqueue([]*models.Person{person})
-	if err != nil {
-		log.Println(err)
-	}
+	pc.queue.C <- person
 
 	w.Header().Set("Location", fmt.Sprintf("/pessoas/%s", person.ID))
 	w.WriteHeader(http.StatusCreated)

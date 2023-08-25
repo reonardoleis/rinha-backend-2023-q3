@@ -17,6 +17,7 @@ type Queue struct {
 	personRepository *repositories.PersonRepository
 	cache            *cache.Cache
 	lastRun          int64
+	C                chan *models.Person
 }
 
 var singleton *Queue
@@ -46,6 +47,7 @@ func Instance() (*Queue, error) {
 		personRepository,
 		cache,
 		time.Now().UnixNano(),
+		make(chan *models.Person),
 	}
 
 	return singleton, nil
@@ -153,4 +155,16 @@ func (q *Queue) Init() {
 		}
 	}
 
+}
+
+func (q *Queue) Monitor() {
+	for {
+		person, ok := <-q.C
+		if !ok {
+			continue
+		}
+
+		q.Enqueue([]*models.Person{person})
+		q.personRepository.InsertPerson(person)
+	}
 }

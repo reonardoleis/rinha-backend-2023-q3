@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 
@@ -75,16 +74,12 @@ func (p PersonRepository) CreatePeople(people []*models.Person) error {
 }
 
 func (p PersonRepository) FindPerson(id string) (*models.Person, error) {
-	person, isCached, isInvalid, err := p.Cache.GetPersonByID(id)
+	person, isCached, err := p.Cache.GetPersonByID(id)
 	if err != nil {
 		log.Println(err)
 	} else {
 		if isCached {
 			return person, nil
-		}
-
-		if isInvalid {
-			return nil, errors.New("no rows in result set")
 		}
 	}
 
@@ -101,7 +96,6 @@ func (p PersonRepository) FindPerson(id string) (*models.Person, error) {
 	).Scan(&person.Name, &person.Nickname, &person.BirthDate, &person.Stack)
 	if err != nil {
 		if err.Error() == "no rows in result set" {
-			p.Cache.SetPerson(id, nil)
 			return nil, err
 		}
 		log.Println(err)
@@ -119,12 +113,10 @@ func (p PersonRepository) SearchPeople(term string) ([]*models.Person, error) {
 		log.Println(err)
 	} else {
 		if isCached {
-			fmt.Println("SearchPeople: cached")
 			return people, nil
 		}
 	}
 
-	fmt.Println("SearchPeople: not cached")
 	query := fmt.Sprintf(
 		`SELECT id, nickname, name, birth_date, stack FROM person WHERE
 	idx @@ to_tsquery('simple', '%s:*')
@@ -149,7 +141,6 @@ func (p PersonRepository) SearchPeople(term string) ([]*models.Person, error) {
 		people = append(people, person)
 	}
 
-	fmt.Println("Search People: ", len(people))
 	p.Cache.SetTermSearch(term, people)
 
 	return people, nil
@@ -169,7 +160,7 @@ func (p PersonRepository) CountPeople() (uint, error) {
 }
 
 func (p PersonRepository) PersonExists(nickname string) (bool, error) {
-	_, exists, isInvalid, err := p.Cache.GetPersonByNickname(nickname)
+	_, exists, err := p.Cache.GetPersonByNickname(nickname)
 	if err != nil {
 		log.Println(err)
 	}
@@ -177,11 +168,6 @@ func (p PersonRepository) PersonExists(nickname string) (bool, error) {
 	if err == nil {
 		if exists {
 			return exists, nil
-		}
-
-		if isInvalid {
-			fmt.Println("Achei por inválido!")
-			return false, nil
 		}
 	}
 

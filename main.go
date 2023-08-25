@@ -20,6 +20,15 @@ func main() {
 	}
 
 	if os.Getenv("IS_QUEUE") == "false" {
+		queue, err := queue.Instance()
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		for i := 0; i < 4; i++ {
+			go queue.Monitor()
+		}
+
 		controller, err := person_controller.PersonControllerInstance()
 		if err != nil {
 			log.Fatalln(err)
