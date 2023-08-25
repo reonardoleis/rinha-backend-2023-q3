@@ -43,10 +43,15 @@ func Instance() (*Cache, error) {
 }
 
 func (c *Cache) SetPerson(key string, person *models.Person) error {
-	json, err := person.ToJSON()
-	if err != nil {
-		log.Println(err)
-		return err
+	var (
+		json []byte
+		err  error
+	)
+
+	if person != nil {
+		json = person.JSON()
+	} else {
+		json = []byte("")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
@@ -67,18 +72,22 @@ func (c *Cache) SetPerson(key string, person *models.Person) error {
 	return nil
 }
 
-func (c *Cache) GetPersonByID(key string) (*models.Person, bool, error) {
+func (c *Cache) GetPersonByID(key string) (*models.Person, bool, bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
 	val, err := c.client.Get(ctx, key).Result()
 	if err != nil {
 		if err == redis.Nil {
-			return nil, false, nil
+			return nil, false, false, nil
 		}
 
 		log.Println(err)
-		return nil, false, err
+		return nil, false, false, err
+	}
+
+	if val == "" {
+		return nil, false, true, nil
 	}
 
 	person := &models.Person{}
@@ -86,34 +95,38 @@ func (c *Cache) GetPersonByID(key string) (*models.Person, bool, error) {
 	err = person.FromJSON([]byte(val))
 	if err != nil {
 		log.Println(err)
-		return nil, false, err
+		return nil, false, false, err
 	}
 
-	return person, true, nil
+	return person, true, false, nil
 }
 
-func (c *Cache) GetPersonByNickname(nickname string) (*models.Person, bool, error) {
+func (c *Cache) GetPersonByNickname(nickname string) (*models.Person, bool, bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
 	userID, err := c.client.Get(ctx, nickname).Result()
 	if err != nil {
 		if err == redis.Nil {
-			return nil, false, nil
+			return nil, false, false, nil
 		}
 
 		log.Println(err)
-		return nil, false, err
+		return nil, false, false, err
 	}
 
 	val, err := c.client.Get(ctx, userID).Result()
 	if err != nil {
 		if err == redis.Nil {
-			return nil, false, nil
+			return nil, false, false, nil
 		}
 
 		log.Println(err)
-		return nil, false, err
+		return nil, false, false, err
+	}
+
+	if val == "" {
+		return nil, false, true, nil
 	}
 
 	person := &models.Person{}
@@ -121,30 +134,10 @@ func (c *Cache) GetPersonByNickname(nickname string) (*models.Person, bool, erro
 	err = person.FromJSON([]byte(val))
 	if err != nil {
 		log.Println(err)
-		return nil, false, err
+		return nil, false, false, err
 	}
 
-	return person, true, nil
-}
-
-func (c *Cache) PersonExists(nickname string) (bool, error) {
-	id, err := c.client.Get(context.Background(), nickname).Result()
-	if err != nil {
-		if err == redis.Nil {
-			return false, nil
-		}
-
-		log.Println(err)
-	}
-
-	_, err = c.client.Exists(context.Background(), id).Result()
-	if err != nil {
-		if err == redis.Nil {
-			return false, nil
-		}
-	}
-
-	return true, nil
+	return person, true, false, nil
 }
 
 func (c *Cache) SetTermSearch(term string, people []*models.Person) error {

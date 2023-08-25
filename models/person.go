@@ -14,8 +14,30 @@ type Person struct {
 	Stack     db.CustomStringSlice `json:"stack" db:"stack"`
 }
 
-func (p Person) ToJSON() ([]byte, error) {
-	return json.Marshal(p)
+func (p Person) JSON() []byte {
+	out := `{"id":"` + string(p.ID) + `","apelido":"` + p.Nickname + `","nome":"` + p.Name + `","nascimento":"` + string(p.BirthDate) + `","stack":[`
+
+	for i, stack := range p.Stack {
+		out += `"` + stack + `"`
+		if i < len(p.Stack)-1 {
+			out += `,`
+		}
+	}
+
+	out += `]}`
+	return []byte(out)
+}
+
+func PersonListJSON(person []*Person) []byte {
+	out := `[`
+	for i, p := range person {
+		out += string(p.JSON())
+		if i < len(person)-1 {
+			out += `,`
+		}
+	}
+	out += `]`
+	return []byte(out)
 }
 
 func (p *Person) FromJSON(data []byte) error {

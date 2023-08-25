@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
-	"unicode/utf8"
+	"sync"
 
 	"github.com/gofrs/uuid"
 	"github.com/reonardoleis/rinha-backend-2023/db"
@@ -64,12 +64,42 @@ func (pc *PersonController) CreatePerson(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	barrier := sync.WaitGroup{}
+	barrier.Add(1)
+	var generatedUUID uuid.UUID
+	var personExists bool
+	go func() {
+		defer barrier.Done()
+		personExists, err = pc.personRepository.PersonExists(person.Nickname)
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		if personExists {
+			w.WriteHeader(http.StatusUnprocessableEntity)
+			return
+		}
+
+		generatedUUID, err = uuid.NewV4()
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	}()
+
 	birthdateRegex := regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
 
-	if utf8.RuneCountInString(person.Nickname) > 32 ||
-		utf8.RuneCountInString(person.Name) > 100 ||
+	if len(person.Nickname) > 32 ||
+		len(person.Name) > 100 ||
 		!birthdateRegex.MatchString(string(person.BirthDate)) {
 		w.WriteHeader(http.StatusUnprocessableEntity)
+		return
+	}
+
+	barrier.Wait()
+	if personExists {
 		return
 	}
 
@@ -78,38 +108,18 @@ func (pc *PersonController) CreatePerson(w http.ResponseWriter, r *http.Request)
 	}
 
 	for _, stack := range person.Stack {
-		stackLen := utf8.RuneCountInString(stack)
+		stackLen := len(stack)
 		if stackLen == 0 || stackLen > 32 {
 			w.WriteHeader(http.StatusUnprocessableEntity)
 			return
 		}
 	}
 
-	personExists, err := pc.personRepository.PersonExists(person.Nickname)
+	person.ID = db.CustomUUID(generatedUUID.String())
+
+	err = pc.personRepository.InsertPerson(person)
 	if err != nil {
 		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	if personExists {
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		return
-	} else {
-
-		uuid, err := uuid.NewV4()
-		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		person.ID = db.CustomUUID(uuid.String())
-
-		err = pc.personRepository.InsertPerson(person)
-		if err != nil {
-			log.Println(err)
-		}
 	}
 
 	err = pc.queue.Enqueue([]*models.Person{person})
@@ -137,14 +147,8 @@ func (pc *PersonController) GetPerson(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json, err := person.ToJSON()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
 	w.WriteHeader(http.StatusOK)
-	w.Write(json)
+	w.Write(person.JSON())
 }
 
 func (pc *PersonController) SearchPeople(w http.ResponseWriter, r *http.Request) {
@@ -161,14 +165,10 @@ func (pc *PersonController) SearchPeople(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	json, err := json.Marshal(people)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	fmt.Println(len(people))
 
 	w.WriteHeader(http.StatusOK)
-	w.Write(json)
+	w.Write(models.PersonListJSON(people))
 }
 
 func (pc *PersonController) CountPeople(w http.ResponseWriter, r *http.Request) {

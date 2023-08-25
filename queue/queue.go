@@ -61,15 +61,10 @@ func (q *Queue) shouldInsertByInterval() bool {
 }
 
 func (q *Queue) Enqueue(person []*models.Person) error {
-	var jsons []byte
-	for _, p := range person {
-		json, err := p.ToJSON()
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-
-		jsons = append(jsons, json...)
+	var jsons = make([]interface{}, len(person))
+	for idx, p := range person {
+		json := p.JSON()
+		jsons[idx] = json
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
