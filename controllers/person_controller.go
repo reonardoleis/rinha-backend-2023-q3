@@ -117,6 +117,14 @@ func (pc *PersonController) CreatePerson(w http.ResponseWriter, r *http.Request)
 
 	person.ID = db.CustomUUID(generatedUUID.String())
 
+	defer func() {
+		if r := recover(); r != nil {
+			pc.personRepository.InsertPerson(person)
+			pc.queue.Enqueue([]*models.Person{person})
+			return
+		}
+	}()
+
 	success := pc.queue.SendToMonitor(person)
 	if !success {
 		pc.personRepository.InsertPerson(person)
