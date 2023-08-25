@@ -21,7 +21,7 @@ func main() {
 	}
 
 	if os.Getenv("IS_QUEUE") == "false" {
-		controller, err := person_controller.PersonControllerInstance()
+		controller, err := person_controller.Instance()
 		if err != nil {
 			log.Fatalln(err)
 		}

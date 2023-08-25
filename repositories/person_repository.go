@@ -68,6 +68,10 @@ func (p PersonRepository) CreatePeople(people []*models.Person) error {
 		return err
 	}
 
+	for _, person := range people {
+		p.Cache.SetPerson(string(person.ID), person)
+	}
+
 	p.Cache.CleanAllTermSearch()
 
 	return nil
@@ -160,7 +164,7 @@ func (p PersonRepository) CountPeople() (uint, error) {
 }
 
 func (p PersonRepository) PersonExists(nickname string) (bool, error) {
-	_, exists, err := p.Cache.GetPersonByNickname(nickname)
+	_, exists, validButNotExists, err := p.Cache.GetPersonByNickname(nickname)
 	if err != nil {
 		log.Println(err)
 	}
@@ -168,6 +172,10 @@ func (p PersonRepository) PersonExists(nickname string) (bool, error) {
 	if err == nil {
 		if exists {
 			return exists, nil
+		}
+
+		if validButNotExists {
+			return false, nil
 		}
 	}
 

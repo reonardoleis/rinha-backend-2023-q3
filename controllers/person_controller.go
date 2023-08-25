@@ -22,7 +22,7 @@ type PersonController struct {
 
 var singleton *PersonController
 
-func PersonControllerInstance() (*PersonController, error) {
+func Instance() (*PersonController, error) {
 	if singleton != nil {
 		return singleton, nil
 	}
