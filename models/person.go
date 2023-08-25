@@ -17,10 +17,9 @@ type Person struct {
 func (p Person) JSON() []byte {
 	out := `{"id":"` + string(p.ID) + `","apelido":"` + p.Nickname + `","nome":"` + p.Name + `","nascimento":"` + string(p.BirthDate) + `","stack":[`
 
-	s := len(p.Stack) - 1
 	for i, stack := range p.Stack {
 		out += `"` + stack + `"`
-		if i < s {
+		if i < len(p.Stack)-1 {
 			out += `,`
 		}
 	}

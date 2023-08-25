@@ -119,10 +119,12 @@ func (p PersonRepository) SearchPeople(term string) ([]*models.Person, error) {
 		log.Println(err)
 	} else {
 		if isCached {
+			fmt.Println("SearchPeople: cached")
 			return people, nil
 		}
 	}
 
+	fmt.Println("SearchPeople: not cached")
 	query := fmt.Sprintf(
 		`SELECT id, nickname, name, birth_date, stack FROM person WHERE
 	idx @@ to_tsquery('simple', '%s:*')
@@ -147,6 +149,7 @@ func (p PersonRepository) SearchPeople(term string) ([]*models.Person, error) {
 		people = append(people, person)
 	}
 
+	fmt.Println("Search People: ", len(people))
 	p.Cache.SetTermSearch(term, people)
 
 	return people, nil
