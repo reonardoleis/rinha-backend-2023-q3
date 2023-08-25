@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"math"
+	"sync"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -18,6 +19,7 @@ type Queue struct {
 	cache            *cache.Cache
 	lastRun          int64
 	C                chan *models.Person
+	lock             sync.Mutex
 }
 
 var singleton *Queue
@@ -48,6 +50,7 @@ func Instance() (*Queue, error) {
 		cache,
 		time.Now().UnixNano(),
 		make(chan *models.Person, 10_000),
+		sync.Mutex{},
 	}
 
 	return singleton, nil
@@ -158,6 +161,9 @@ func (q *Queue) Init() {
 }
 
 func (q *Queue) SendToMonitor(person *models.Person) bool {
+	q.lock.Lock()
+	defer q.lock.Unlock()
+
 	if len(q.C) >= cap(q.C) {
 		return false
 	}
