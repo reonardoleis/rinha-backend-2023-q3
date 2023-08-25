@@ -126,6 +126,11 @@ func (pc *PersonController) GetPerson(w http.ResponseWriter, r *http.Request) {
 	splittedURL := strings.Split(r.URL.Path, "/")
 	id := splittedURL[len(splittedURL)-1]
 
+	if len(id) != 36 {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
 	person, err := pc.personRepository.FindPerson(id)
 	if err != nil {
 		if strings.Contains(err.Error(), "no rows in result set") {
@@ -144,12 +149,13 @@ func (pc *PersonController) GetPerson(w http.ResponseWriter, r *http.Request) {
 func (pc *PersonController) SearchPeople(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	term := query.Get("t")
-	if term == "" {
+	termLen := len(term)
+	if termLen == 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	people, err := pc.personRepository.SearchPeople(term)
+	people, err := pc.personRepository.SearchPeople(term, termLen)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
