@@ -130,7 +130,7 @@ func (p PersonRepository) SearchPeople(term string, termLen int) ([]*models.Pers
 	} else if termLen <= 100 {
 		query = fmt.Sprintf(
 			`SELECT id, nickname, name, birth_date, stack FROM person WHERE
-		name ILIKE '%%%s%%'
+		to_tsvector(name) @@ to_tsquery('simple', '%s:*')
 		ORDER BY id DESC
 		LIMIT 50`,
 			term,
