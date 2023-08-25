@@ -68,10 +68,6 @@ func (p PersonRepository) CreatePeople(people []*models.Person) error {
 		return err
 	}
 
-	for _, person := range people {
-		p.Cache.SetPerson(string(person.ID), person)
-	}
-
 	p.Cache.CleanAllTermSearch()
 
 	return nil
@@ -135,6 +131,7 @@ func (p PersonRepository) SearchPeople(term string) ([]*models.Person, error) {
 		return nil, err
 	}
 
+	b := false
 	for rows.Next() {
 		person := &models.Person{}
 		err := rows.Scan(&person.ID, &person.Nickname, &person.Name, &person.BirthDate, &person.Stack)
@@ -143,6 +140,13 @@ func (p PersonRepository) SearchPeople(term string) ([]*models.Person, error) {
 			return nil, err
 		}
 		people = append(people, person)
+		b = true
+	}
+
+	if !b {
+		if len(term) <= 32 {
+			p.Cache.SetNickname(term)
+		}
 	}
 
 	p.Cache.SetTermSearch(term, people)

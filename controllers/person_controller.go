@@ -149,6 +149,11 @@ func (pc *PersonController) SearchPeople(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	if len(term) > 100 {
+		w.Write([]byte("[]"))
+		return
+	}
+
 	people, err := pc.personRepository.SearchPeople(term)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

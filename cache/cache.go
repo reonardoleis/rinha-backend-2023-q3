@@ -85,6 +85,27 @@ func (c *Cache) SetPerson(key string, person *models.Person) error {
 	return nil
 }
 
+func (c *Cache) IsAvailable(nickname string) (bool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	val, err := c.client.Get(ctx, nickname).Result()
+	if err != nil {
+		if err == redis.Nil {
+			return true, nil
+		}
+
+		log.Println(err)
+		return false, err
+	}
+
+	if val == "" {
+		return true, nil
+	}
+
+	return false, nil
+}
+
 func (c *Cache) GetPersonByID(key string) (*models.Person, bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
