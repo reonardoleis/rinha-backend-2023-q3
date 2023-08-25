@@ -47,7 +47,7 @@ func Instance() (*Queue, error) {
 		personRepository,
 		cache,
 		time.Now().UnixNano(),
-		make(chan *models.Person, 1_000_000),
+		make(chan *models.Person),
 	}
 
 	return singleton, nil
@@ -159,10 +159,12 @@ func (q *Queue) Init() {
 
 func (q *Queue) MonitorSetAndEnqueue() {
 	for {
-		person := <-q.C
-		if person != nil {
+		select {
+		case person := <-q.C:
 			q.cache.SetPerson(string(person.ID), person)
 			q.Enqueue([]*models.Person{person})
+		default:
+			continue
 		}
 	}
 }
