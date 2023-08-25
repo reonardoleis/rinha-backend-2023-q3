@@ -117,14 +117,11 @@ func (pc *PersonController) CreatePerson(w http.ResponseWriter, r *http.Request)
 
 	person.ID = db.CustomUUID(generatedUUID.String())
 
-	defer func() {
-		if r := recover(); r != nil {
-			pc.personRepository.InsertPerson(person)
-			pc.queue.Enqueue([]*models.Person{person})
-		}
-	}()
-
-	pc.queue.C <- person
+	success := pc.queue.SendToMonitor(person)
+	if !success {
+		pc.personRepository.InsertPerson(person)
+		pc.queue.Enqueue([]*models.Person{person})
+	}
 
 	w.Header().Set("Location", fmt.Sprintf("/pessoas/%s", person.ID))
 	w.WriteHeader(http.StatusCreated)

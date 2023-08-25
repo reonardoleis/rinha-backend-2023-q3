@@ -47,7 +47,7 @@ func Instance() (*Queue, error) {
 		personRepository,
 		cache,
 		time.Now().UnixNano(),
-		make(chan *models.Person),
+		make(chan *models.Person, 10_000),
 	}
 
 	return singleton, nil
@@ -155,6 +155,15 @@ func (q *Queue) Init() {
 		}
 	}
 
+}
+
+func (q *Queue) SendToMonitor(person *models.Person) bool {
+	if len(q.C) >= cap(q.C) {
+		return false
+	}
+
+	q.C <- person
+	return true
 }
 
 func (q *Queue) MonitorSetAndEnqueue() {
