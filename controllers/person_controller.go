@@ -107,7 +107,11 @@ func (pc *PersonController) CreatePerson(w http.ResponseWriter, r *http.Request)
 
 	person.ID = db.CustomUUID(generatedUUID.String())
 
-	pc.queue.C <- person
+	ok := pc.queue.Send(person)
+	if !ok {
+		pc.queue.Enqueue([]*models.Person{person})
+		pc.personRepository.InsertPerson(person)
+	}
 
 	w.Header().Set("Location", fmt.Sprintf("/pessoas/%s", person.ID))
 	w.WriteHeader(http.StatusCreated)
@@ -146,8 +150,6 @@ func (pc *PersonController) SearchPeople(w http.ResponseWriter, r *http.Request)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	fmt.Println(len(people))
 
 	w.WriteHeader(http.StatusOK)
 	w.Write(models.PersonListJSON(people))
