@@ -12,7 +12,6 @@ CREATE TABLE IF NOT EXISTS person(
 );
 
 CREATE INDEX idx_person ON person USING GIN(idx);
-CREATE INDEX idx_person_name ON person USING GIN(to_tsvector('simple', name));
 
 ALTER SYSTEM SET shared_buffers TO '512MB';
 ALTER SYSTEM SET max_connections TO '12000';

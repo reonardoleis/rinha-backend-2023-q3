@@ -107,7 +107,7 @@ func (p PersonRepository) FindPerson(id string) (*models.Person, error) {
 	return person, nil
 }
 
-func (p PersonRepository) SearchPeople(term string, termLen int) ([]*models.Person, error) {
+func (p PersonRepository) SearchPeople(term string) ([]*models.Person, error) {
 	people, isCached, err := p.Cache.GetTermSearch(term)
 	if err != nil {
 		log.Println(err)
@@ -117,27 +117,13 @@ func (p PersonRepository) SearchPeople(term string, termLen int) ([]*models.Pers
 		}
 	}
 
-	var query string
-
-	if termLen <= 32 {
-		query = fmt.Sprintf(
-			`SELECT id, nickname, name, birth_date, stack FROM person WHERE
-		idx @@ to_tsquery('simple', '%s:*')
-		ORDER BY id DESC
-		LIMIT 50`,
-			term,
-		)
-	} else if termLen <= 100 {
-		query = fmt.Sprintf(
-			`SELECT id, nickname, name, birth_date, stack FROM person WHERE
-		to_tsvector(name) @@ to_tsquery('simple', '%s:*')
-		ORDER BY id DESC
-		LIMIT 50`,
-			term,
-		)
-	} else {
-		return []*models.Person{}, nil
-	}
+	query := fmt.Sprintf(
+		`SELECT id, nickname, name, birth_date, stack FROM person WHERE
+	idx @@ to_tsquery('simple', '%s:*')
+	ORDER BY id DESC
+	LIMIT 50`,
+		term,
+	)
 
 	rows, err := p.DB.Conn.Query(context.Background(), query)
 	if err != nil {
