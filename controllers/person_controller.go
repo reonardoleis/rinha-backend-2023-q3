@@ -144,12 +144,12 @@ func (pc *PersonController) GetPerson(w http.ResponseWriter, r *http.Request) {
 func (pc *PersonController) SearchPeople(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	term := query.Get("t")
-	if term == "" {
+
+	termLen := len(term)
+	if termLen == 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-
-	termLen := len(term)
 
 	if termLen > 100 {
 		w.Write([]byte("[]"))

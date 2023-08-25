@@ -142,7 +142,6 @@ func (p PersonRepository) SearchPeople(term string, termLen int) ([]*models.Pers
 		return nil, err
 	}
 
-	b := false
 	for rows.Next() {
 		person := &models.Person{}
 		err := rows.Scan(&person.ID, &person.Nickname, &person.Name, &person.BirthDate, &person.Stack)
@@ -151,13 +150,6 @@ func (p PersonRepository) SearchPeople(term string, termLen int) ([]*models.Pers
 			return nil, err
 		}
 		people = append(people, person)
-		b = true
-	}
-
-	if !b {
-		if len(term) <= 32 {
-			p.Cache.SetNickname(term)
-		}
 	}
 
 	p.Cache.SetTermSearch(term, people)
@@ -179,7 +171,7 @@ func (p PersonRepository) CountPeople() (uint, error) {
 }
 
 func (p PersonRepository) PersonExists(nickname string) (bool, error) {
-	_, exists, validButNotExists, err := p.Cache.GetPersonByNickname(nickname)
+	_, exists, err := p.Cache.GetPersonByNickname(nickname)
 	if err != nil {
 		log.Println(err)
 	}
@@ -189,9 +181,6 @@ func (p PersonRepository) PersonExists(nickname string) (bool, error) {
 			return exists, nil
 		}
 
-		if validButNotExists {
-			return false, nil
-		}
 	}
 
 	query := `SELECT id FROM person WHERE nickname = $1 LIMIT 1`

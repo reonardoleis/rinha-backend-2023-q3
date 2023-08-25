@@ -135,32 +135,28 @@ func (c *Cache) GetPersonByID(key string) (*models.Person, bool, error) {
 	return person, true, nil
 }
 
-func (c *Cache) GetPersonByNickname(nickname string) (*models.Person, bool, bool, error) {
+func (c *Cache) GetPersonByNickname(nickname string) (*models.Person, bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
 	userID, err := c.client.Get(ctx, nickname).Result()
 	if err != nil {
 		if err == redis.Nil {
-			return nil, false, false, nil
+			return nil, false, nil
 		}
 
 		log.Println(err)
-		return nil, false, false, err
-	}
-
-	if userID == "" {
-		return nil, false, true, nil
+		return nil, false, err
 	}
 
 	val, err := c.client.Get(ctx, userID).Result()
 	if err != nil {
 		if err == redis.Nil {
-			return nil, false, false, nil
+			return nil, false, nil
 		}
 
 		log.Println(err)
-		return nil, false, false, err
+		return nil, false, err
 	}
 
 	person := &models.Person{}
@@ -168,10 +164,10 @@ func (c *Cache) GetPersonByNickname(nickname string) (*models.Person, bool, bool
 	err = person.FromJSON([]byte(val))
 	if err != nil {
 		log.Println(err)
-		return nil, false, false, err
+		return nil, false, err
 	}
 
-	return person, true, false, nil
+	return person, true, nil
 }
 
 func (c *Cache) SetTermSearch(term string, people []*models.Person) error {
