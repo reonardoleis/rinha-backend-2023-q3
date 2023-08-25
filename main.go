@@ -25,7 +25,7 @@ func main() {
 			log.Fatalln(err)
 		}
 
-		for i := 0; i < 4; i++ {
+		for i := 0; i < 16; i++ {
 			go queue.Monitor()
 		}
 
