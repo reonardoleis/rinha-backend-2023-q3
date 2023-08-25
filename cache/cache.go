@@ -42,19 +42,6 @@ func Instance() (*Cache, error) {
 	return singleton, nil
 }
 
-func (c *Cache) SetNickname(key string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-
-	err := c.client.Set(ctx, key, "", utils.GetCacheDurationEnv()*time.Second).Err()
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	return nil
-}
-
 func (c *Cache) SetPerson(key string, person *models.Person) error {
 	var (
 		json []byte
@@ -83,27 +70,6 @@ func (c *Cache) SetPerson(key string, person *models.Person) error {
 	}
 
 	return nil
-}
-
-func (c *Cache) IsAvailable(nickname string) (bool, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-
-	val, err := c.client.Get(ctx, nickname).Result()
-	if err != nil {
-		if err == redis.Nil {
-			return true, nil
-		}
-
-		log.Println(err)
-		return false, err
-	}
-
-	if val == "" {
-		return true, nil
-	}
-
-	return false, nil
 }
 
 func (c *Cache) GetPersonByID(key string) (*models.Person, bool, error) {

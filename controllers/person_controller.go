@@ -22,7 +22,7 @@ type PersonController struct {
 
 var singleton *PersonController
 
-func Instance() (*PersonController, error) {
+func PersonControllerInstance() (*PersonController, error) {
 	if singleton != nil {
 		return singleton, nil
 	}
@@ -144,19 +144,12 @@ func (pc *PersonController) GetPerson(w http.ResponseWriter, r *http.Request) {
 func (pc *PersonController) SearchPeople(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	term := query.Get("t")
-
-	termLen := len(term)
-	if termLen == 0 {
+	if term == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	if termLen > 100 {
-		w.Write([]byte("[]"))
-		return
-	}
-
-	people, err := pc.personRepository.SearchPeople(term, termLen)
+	people, err := pc.personRepository.SearchPeople(term)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
