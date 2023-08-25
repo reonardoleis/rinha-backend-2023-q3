@@ -25,7 +25,9 @@ func main() {
 			log.Fatalln(err)
 		}
 
-		go queue.MonitorSetAndEnqueue()
+		for i := 0; i < 5; i++ {
+			go queue.MonitorSetAndEnqueue()
+		}
 
 		controller, err := person_controller.PersonControllerInstance()
 		if err != nil {
