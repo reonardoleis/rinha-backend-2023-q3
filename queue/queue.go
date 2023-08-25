@@ -159,12 +159,13 @@ func (q *Queue) Init() {
 
 func (q *Queue) MonitorSetAndEnqueue() {
 	for {
-		select {
-		case person := <-q.C:
-			q.cache.SetPerson(string(person.ID), person)
-			q.Enqueue([]*models.Person{person})
-		default:
+		person, ok := <-q.C
+
+		if !ok {
 			continue
 		}
+
+		q.cache.SetPerson(string(person.ID), person)
+		q.Enqueue([]*models.Person{person})
 	}
 }
